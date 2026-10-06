@@ -179,6 +179,7 @@ def run_bot(
 
                             decision, edited_cl = _wait_for_review(state)
                             if decision == "stop":
+                                state.stop()
                                 break
                             if decision == "skip":
                                 emit(
