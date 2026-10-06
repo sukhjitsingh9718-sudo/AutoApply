@@ -259,7 +259,6 @@ def create_app() -> tuple[Flask, SocketIO]:
 
     sio = SocketIO(
         flask_app,
-        cors_allowed_origins=["http://localhost:*", "http://127.0.0.1:*"],
         async_mode="gevent",
     )
 
