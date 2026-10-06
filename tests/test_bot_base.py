@@ -131,7 +131,7 @@ class TestBaseApplier:
 
     def test_detect_captcha_no_captcha(self):
         class TestApplier(BaseApplier):
-            def apply(self, job, resume_pdf_path, cover_letter_text, profile):
+            def _do_apply(self, job, resume_pdf_path, cover_letter_text, profile):
                 return ApplyResult(success=True)
 
         page = MagicMock()
@@ -141,7 +141,7 @@ class TestBaseApplier:
 
     def test_detect_captcha_found(self):
         class TestApplier(BaseApplier):
-            def apply(self, job, resume_pdf_path, cover_letter_text, profile):
+            def _do_apply(self, job, resume_pdf_path, cover_letter_text, profile):
                 return ApplyResult(success=True)
 
         page = MagicMock()
@@ -152,7 +152,7 @@ class TestBaseApplier:
 
     def test_human_type_calls_type_per_char(self):
         class TestApplier(BaseApplier):
-            def apply(self, job, resume_pdf_path, cover_letter_text, profile):
+            def _do_apply(self, job, resume_pdf_path, cover_letter_text, profile):
                 return ApplyResult(success=True)
 
         page = MagicMock()
@@ -169,7 +169,7 @@ class TestBaseApplier:
 
     def test_random_pause_sleeps(self):
         class TestApplier(BaseApplier):
-            def apply(self, job, resume_pdf_path, cover_letter_text, profile):
+            def _do_apply(self, job, resume_pdf_path, cover_letter_text, profile):
                 return ApplyResult(success=True)
 
         page = MagicMock()
