@@ -267,7 +267,8 @@ class TestAssemblerJDPreFilter:
             {"id": 1, "category": "experience", "text": "Built APIs", "job_types": '["backend"]'},
         ]
 
-        with patch("core.jd_classifier.classify_jd") as mock_classify, \
+        with patch("core.ai_engine.check_ai_available", return_value=True), \
+             patch("core.jd_classifier.classify_jd") as mock_classify, \
              patch("core.jd_classifier.get_relevant_types", return_value=["backend"]), \
              patch("core.jd_classifier.filter_entries_by_type", return_value=[
                  {"id": 1, "category": "experience", "text": "Built APIs"},
