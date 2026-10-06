@@ -217,10 +217,12 @@ class TestRoles:
         assert role_id is not None
 
     def test_dedup_role(self, db):
-        """Duplicate (title, company, start_date) returns None."""
-        db.save_role(title="Dev", company="Acme", start_date="2020-01")
-        result = db.save_role(title="Dev", company="Acme", start_date="2020-01")
-        assert result is None
+        """Duplicate (title, company, start_date) returns the existing id."""
+        first_id = db.save_role(title="Dev", company="Acme", start_date="2020-01")
+        second_id = db.save_role(title="Dev", company="Acme", start_date="2020-01")
+
+        assert first_id is not None
+        assert second_id == first_id
 
     def test_get_roles(self, db):
         """List all roles ordered by start_date."""

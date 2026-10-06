@@ -969,7 +969,10 @@ class Database:
         domain: str | None = None,
         source_doc_id: int | None = None,
     ) -> int | None:
-        """Insert a role record with dedup. Returns id or None if duplicate."""
+        """Insert a role record with dedup and return the role id.
+
+        If the role already exists, return the existing role id.
+        """
         with self._connect() as conn:
             try:
                 cursor = conn.execute(
