@@ -57,10 +57,7 @@ class LinkedInApplier(BaseApplier):
             self._fill_form_fields(profile)
 
             if resume_pdf_path:
-                self._safe_upload(resume_pdf_path, [
-                    "input[type='file'][name*='resume']",
-                    "input[type='file']",
-                ])
+                self._upload_resume(resume_pdf_path)
 
             self._fill_cover_letter(cover_letter_text)
 
@@ -101,6 +98,16 @@ class LinkedInApplier(BaseApplier):
         self._safe_fill(
             "input[name*='phone'], input[id*='phone']",
             profile.phone_full,
+        )
+
+    def _upload_resume(self, resume_pdf_path) -> bool:
+        """Upload a resume using LinkedIn Easy Apply file selectors."""
+        return self._safe_upload(
+            resume_pdf_path,
+            [
+                "input[type='file'][name*='resume']",
+                "input[type='file']",
+            ],
         )
 
     def _fill_cover_letter(self, text: str) -> None:
