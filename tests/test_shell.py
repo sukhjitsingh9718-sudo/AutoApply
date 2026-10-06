@@ -154,15 +154,17 @@ class TestSystemTray:
             img = _get_icon_image()
             assert isinstance(img, Image.Image)
 
-    @patch("shell.tray.pystray", create=True)
-    def test_create_tray_starts_thread(self, mock_pystray):
+    def test_create_tray_starts_thread(self):
         """create_tray starts the tray in a background thread."""
+        import sys
+
         import shell.tray
 
         # Reset global state
         shell.tray._tray_instance = None
         shell.tray._tray_thread = None
 
+        mock_pystray = MagicMock()
         mock_icon = MagicMock()
         mock_pystray.Icon.return_value = mock_icon
         mock_pystray.Menu = MagicMock()
@@ -171,7 +173,8 @@ class TestSystemTray:
         on_show = MagicMock()
         on_quit = MagicMock()
 
-        with patch("shell.tray._get_icon_image") as mock_icon_img:
+        with patch.dict(sys.modules, {"pystray": mock_pystray}), \
+             patch("shell.tray._get_icon_image") as mock_icon_img:
             from PIL import Image
 
             mock_icon_img.return_value = Image.new("RGBA", (64, 64))
