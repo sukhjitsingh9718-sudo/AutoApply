@@ -135,10 +135,19 @@ def login_sessions():
     import shutil
     import sqlite3
 
-    profile_cookies = get_data_dir() / "browser_profile" / "Default" / "Network" / "Cookies"
+    profile_dir = get_data_dir() / "browser_profile" / "Default"
+    cookie_candidates = [
+        profile_dir / "Network" / "Cookies",
+        profile_dir / "Cookies",
+    ]
+    profile_cookies = next(
+        (candidate for candidate in cookie_candidates if candidate.exists()),
+        None,
+    )
+
     result = {"linkedin": False, "indeed": False}
 
-    if not profile_cookies.exists():
+    if profile_cookies is None:
         return jsonify(result)
 
     tmp_cookies = get_data_dir() / "browser_profile" / "_cookies_check.db"
