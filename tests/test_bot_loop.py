@@ -1007,3 +1007,245 @@ class TestRunBotEdgeCases:
             with patch("bot.bot.score_job") as mock_score:
                 mock_score.return_value = _make_scored(raw=raw, pass_filter=False, skip_reason="low")
                 run_bot(state, config, db)
+
+
+# ===================================================================
+# run_bot — login gate integration
+# ===================================================================
+
+
+class TestRunBotLoginGate:
+    """FR-089: run_bot correctly wires login-required application flow."""
+
+    @staticmethod
+    def _make_login_setup(raw):
+        state = BotState()
+        state.start()
+
+        searcher_cls = MagicMock()
+        searcher = MagicMock()
+
+        def _search(*args, **kwargs):
+            yield raw
+            state.stop()
+
+        searcher.search.side_effect = _search
+        searcher_cls.return_value = searcher
+
+        return state, searcher_cls
+
+    @patch("bot.bot.time.sleep")
+    @patch("bot.bot._save_job_description", return_value=None)
+    @patch("bot.bot._generate_docs")
+    @patch("bot.bot._apply_to_job")
+    @patch("bot.bot._save_application")
+    @patch("bot.bot.score_job")
+    @patch("bot.bot.BrowserManager")
+    def test_login_done_retries_application(
+        self,
+        mock_bm,
+        mock_score,
+        mock_save,
+        mock_apply,
+        mock_gen,
+        mock_save_jd,
+        mock_sleep,
+    ):
+        """Completing login retries the same application once."""
+
+        from bot.bot import run_bot
+
+        raw = FakeRawJob(
+            apply_url="https://company.wd5.myworkdayjobs.com/job/123",
+        )
+        scored = _make_scored(raw=raw, pass_filter=True)
+
+        mock_score.return_value = scored
+        mock_gen.return_value = (
+            "/resume.pdf",
+            "/cover.txt",
+            "cover text",
+            None,
+        )
+
+        login_required = ApplyResult(
+            success=False,
+            login_required=True,
+            login_domain="company.wd5.myworkdayjobs.com",
+            login_portal_type="workday",
+            error_message="Login required",
+        )
+        applied = ApplyResult(success=True)
+
+        mock_apply.side_effect = [login_required, applied]
+
+        state, searcher_cls = self._make_login_setup(raw)
+
+        original_wait = state.wait_for_login
+
+        def _complete_login():
+            assert state.awaiting_login is True
+            assert state.login_context["domain"] == (
+                "company.wd5.myworkdayjobs.com"
+            )
+            state.set_login_decision("done")
+            return original_wait()
+
+        state.wait_for_login = MagicMock(side_effect=_complete_login)
+
+        config = _make_config(
+            enabled_platforms=["linkedin"],
+            apply_mode="full_auto",
+        )
+        db = MagicMock()
+
+        with patch("bot.bot.SEARCHERS", {"linkedin": searcher_cls}):
+            run_bot(state, config, db)
+
+        assert mock_apply.call_count == 2
+        state.wait_for_login.assert_called_once()
+
+        mock_save.assert_called_once()
+        saved_result = mock_save.call_args.args[5]
+        assert saved_result.success is True
+
+    @patch("bot.bot.time.sleep")
+    @patch("bot.bot._save_job_description", return_value=None)
+    @patch("bot.bot._generate_docs")
+    @patch("bot.bot._apply_to_job")
+    @patch("bot.bot._save_application")
+    @patch("bot.bot.score_job")
+    @patch("bot.bot.BrowserManager")
+    def test_login_skip_saves_for_later_without_retry(
+        self,
+        mock_bm,
+        mock_score,
+        mock_save,
+        mock_apply,
+        mock_gen,
+        mock_save_jd,
+        mock_sleep,
+    ):
+        """Skipping login stores the login-required result without retry."""
+
+        from bot.bot import run_bot
+
+        raw = FakeRawJob(
+            apply_url="https://company.wd5.myworkdayjobs.com/job/456",
+        )
+        scored = _make_scored(raw=raw, pass_filter=True)
+
+        mock_score.return_value = scored
+        mock_gen.return_value = (
+            "/resume.pdf",
+            "/cover.txt",
+            "cover text",
+            None,
+        )
+
+        login_required = ApplyResult(
+            success=False,
+            login_required=True,
+            login_domain="company.wd5.myworkdayjobs.com",
+            login_portal_type="workday",
+            error_message="Login required",
+        )
+
+        mock_apply.return_value = login_required
+
+        state, searcher_cls = self._make_login_setup(raw)
+
+        original_wait = state.wait_for_login
+
+        def _skip_login():
+            assert state.awaiting_login is True
+            state.set_login_decision("skip")
+            return original_wait()
+
+        state.wait_for_login = MagicMock(side_effect=_skip_login)
+
+        config = _make_config(
+            enabled_platforms=["linkedin"],
+            apply_mode="full_auto",
+        )
+        db = MagicMock()
+
+        with patch("bot.bot.SEARCHERS", {"linkedin": searcher_cls}):
+            run_bot(state, config, db)
+
+        mock_apply.assert_called_once()
+        state.wait_for_login.assert_called_once()
+
+        mock_save.assert_called_once()
+        saved_result = mock_save.call_args.args[5]
+
+        assert saved_result is login_required
+        assert saved_result.login_required is True
+
+    @patch("bot.bot.time.sleep")
+    @patch("bot.bot._save_job_description", return_value=None)
+    @patch("bot.bot._generate_docs")
+    @patch("bot.bot._apply_to_job")
+    @patch("bot.bot._save_application")
+    @patch("bot.bot.score_job")
+    @patch("bot.bot.BrowserManager")
+    def test_login_stop_exits_without_retry_or_save(
+        self,
+        mock_bm,
+        mock_score,
+        mock_save,
+        mock_apply,
+        mock_gen,
+        mock_save_jd,
+        mock_sleep,
+    ):
+        """Stopping at the login gate exits without retrying."""
+
+        from bot.bot import run_bot
+
+        raw = FakeRawJob(
+            apply_url="https://company.wd5.myworkdayjobs.com/job/789",
+        )
+        scored = _make_scored(raw=raw, pass_filter=True)
+
+        mock_score.return_value = scored
+        mock_gen.return_value = (
+            "/resume.pdf",
+            "/cover.txt",
+            "cover text",
+            None,
+        )
+
+        mock_apply.return_value = ApplyResult(
+            success=False,
+            login_required=True,
+            login_domain="company.wd5.myworkdayjobs.com",
+            login_portal_type="workday",
+            error_message="Login required",
+        )
+
+        state, searcher_cls = self._make_login_setup(raw)
+
+        original_wait = state.wait_for_login
+
+        def _stop_at_login():
+            assert state.awaiting_login is True
+            state.stop()
+            return original_wait()
+
+        state.wait_for_login = MagicMock(side_effect=_stop_at_login)
+
+        config = _make_config(
+            enabled_platforms=["linkedin"],
+            apply_mode="full_auto",
+        )
+        db = MagicMock()
+
+        with patch("bot.bot.SEARCHERS", {"linkedin": searcher_cls}):
+            run_bot(state, config, db)
+
+        mock_apply.assert_called_once()
+        state.wait_for_login.assert_called_once()
+        mock_save.assert_not_called()
+
+        assert state.stop_flag is True
