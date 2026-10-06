@@ -4,7 +4,6 @@
     "page_title": "AutoApply — Panel Inteligente de Solicitudes de Empleo",
     "skip_to_content": "Saltar al contenido principal"
   },
-
   "nav": {
     "dashboard": "Panel",
     "applications": "Solicitudes",
@@ -14,7 +13,6 @@
     "resumes": "Biblioteca de CVs",
     "knowledge_base": "Base de Conocimiento"
   },
-
   "wizard": {
     "welcome_title": "Bienvenido a AutoApply",
     "welcome_subtitle": "AutoApply automatiza tu búsqueda de empleo escaneando plataformas, encontrando oportunidades que coincidan con tu perfil, generando CVs y cartas de presentación personalizadas, y postulándote en tu nombre. Vamos a configurarlo en unos sencillos pasos.",
@@ -73,7 +71,6 @@
     "resume_upload_aria": "Subir archivo de CV. Haz clic o arrastra y suelta. PDF o DOCX, máximo 5MB",
     "platform_login_subtitle": "AutoApply abre una ventana del navegador donde puedes iniciar sesión en tus cuentas. Las sesiones se guardan para que solo necesites hacerlo una vez."
   },
-
   "form": {
     "first_name": "Nombre",
     "last_name": "Apellido",
@@ -128,7 +125,6 @@
     "filename": "Nombre de Archivo",
     "content": "Contenido"
   },
-
   "placeholder": {
     "first_name": "María",
     "last_name": "García",
@@ -162,7 +158,6 @@
     "file_content": "Introduce los detalles de tu experiencia...",
     "years_exp": "ej. 5"
   },
-
   "button": {
     "start": "Iniciar",
     "pause": "Pausar",
@@ -189,14 +184,12 @@
     "approve_and_apply": "Aprobar y Aplicar",
     "upload": "Subir"
   },
-
   "bot": {
     "running": "En Ejecución",
     "paused": "Pausado",
     "stopped": "Detenido",
     "uptime_default": "--:--"
   },
-
   "ai": {
     "connected": "IA Conectada",
     "not_configured": "IA (no configurada)",
@@ -204,7 +197,6 @@
     "warning_body": "El bot usará plantillas básicas en lugar de CVs generados por IA. Configúralo en",
     "warning_link": "Configuración → Proveedor de IA"
   },
-
   "applications": {
     "no_results": "No se encontraron solicitudes.",
     "load_error": "No se pudieron cargar las solicitudes.",
@@ -244,7 +236,6 @@
     "col_notes": "Notas",
     "notes_placeholder": "Agrega notas sobre esta solicitud..."
   },
-
   "profile": {
     "edit_file": "Editar Archivo",
     "new_file": "Nuevo Archivo de Experiencia",
@@ -257,7 +248,6 @@
     "screen_title": "Archivos de Experiencia",
     "loading": "Cargando archivos..."
   },
-
   "settings": {
     "select_provider": "Selecciona un proveedor primero",
     "enter_api_key": "Ingresa una clave de API",
@@ -307,14 +297,12 @@
     "schedule_description": "Iniciar y detener el bot automáticamente según un horario. Cuando está habilitado, el bot solo se ejecuta durante los días y la ventana horaria configurados.",
     "answers_description": "Rellena previamente las respuestas a preguntas comunes de solicitud (Workday, Ashby, etc.). Se usan automáticamente cuando el bot encuentra preguntas coincidentes."
   },
-
   "login": {
     "open_error": "Error al abrir el navegador",
     "connection_error": "No se pudo conectar al servidor.",
     "connected": "Conectado",
     "not_connected": "No conectado"
   },
-
   "review": {
     "unknown": "Desconocido",
     "at": "en",
@@ -322,11 +310,9 @@
     "cover_letter_heading": "Carta de Presentación",
     "edit_and_apply": "Editar y Aplicar"
   },
-
   "feed": {
     "empty": "Sin actividad aún. Inicia el bot para comenzar."
   },
-
   "analytics": {
     "applications_label": "Solicitudes",
     "screen_title": "Analíticas",
@@ -374,7 +360,6 @@
     "empty_state": "No hay datos de solicitudes aún. Inicia el bot para comenzar a rastrear analíticas.",
     "error_loading": "No se pudieron cargar los datos de analíticas."
   },
-
   "status": {
     "applied": "Aplicada",
     "interview": "Entrevista",
@@ -384,7 +369,6 @@
     "error": "Error",
     "manual_required": "Requiere Acción Manual"
   },
-
   "schedule": {
     "enabled": "Habilitado",
     "days_of_week": "Días de la Semana",
@@ -400,7 +384,6 @@
     "enable_schedule": "Habilitar Programación",
     "active": "Activo"
   },
-
   "experience_levels": {
     "entry": "Nivel Inicial",
     "mid": "Nivel Medio",
@@ -412,7 +395,6 @@
     "mid_short": "Medio",
     "lead_short": "Líder"
   },
-
   "errors": {
     "unauthorized": "No autorizado",
     "too_many_requests": "Demasiadas solicitudes",
@@ -447,9 +429,12 @@
     "invalid_filename": "Nombre de archivo inválido",
     "invalid_filename_detail": "Nombre de archivo inválido. Use solo letras, números, guiones, guiones bajos, espacios y extensión .txt",
     "content_required": "El contenido es requerido",
-    "file_not_found": "Archivo no encontrado"
+    "file_not_found": "Archivo no encontrado",
+    "compilation_failed": "La compilación falló",
+    "template_not_found": "No se encontró la plantilla",
+    "invalid_request": "Solicitud no válida",
+    "pdflatex_not_found": "No se encontró pdflatex"
   },
-
   "dashboard": {
     "stat_found": "Encontrados",
     "stat_applied": "Aplicados",
@@ -464,7 +449,6 @@
     "ai_warning_link": "Configuración → Proveedor de IA",
     "ai_warning_suffix": "para CVs y cartas de presentación personalizadas."
   },
-
   "eeo": {
     "gender_male": "Masculino",
     "gender_female": "Femenino",
@@ -483,7 +467,6 @@
     "disability_no": "No, no tengo una discapacidad",
     "disability_decline": "Prefiero no responder"
   },
-
   "modal": {
     "close_aria": "Cerrar diálogo",
     "cover_letter_title": "Carta de Presentación",
@@ -498,11 +481,9 @@
     "confirm_delete_title": "¿Eliminar Archivo?",
     "confirm_delete_desc": "Esta acción no se puede deshacer."
   },
-
   "file_upload": {
     "click_to_change": "Haz clic para cambiar"
   },
-
   "resumes": {
     "title": "Biblioteca de CVs",
     "search_placeholder": "Buscar por empresa o título del puesto...",
@@ -551,7 +532,6 @@
     "diff_unchanged": "Sin cambios",
     "diff_legend": "Leyenda de Diferencias"
   },
-
   "kb": {
     "title": "Base de Conocimiento",
     "upload_title": "Subir Documentos",
@@ -584,9 +564,12 @@
     "category_summary": "Resumen",
     "category_certification": "Certificaciones",
     "category_award": "Premios",
-    "category_volunteer": "Voluntariado"
+    "category_volunteer": "Voluntariado",
+    "col_job_title": "Puesto",
+    "col_dates": "Fechas",
+    "col_location": "Ubicación",
+    "col_company": "Empresa"
   },
-
   "reuse": {
     "settings_title": "Ensamblaje Inteligente de Currículum",
     "enabled": "Habilitar ensamblaje por Base de Conocimiento",
@@ -599,9 +582,20 @@
     "template": "Plantilla",
     "font_family": "Familia de Fuente",
     "font_size": "Tamaño de Fuente",
-    "margin": "Margen de Página"
+    "margin": "Margen de Página",
+    "default_badge": "Predeterminada",
+    "no_custom_templates": "No hay plantillas personalizadas",
+    "template_deleted": "Plantilla eliminada",
+    "upload_template": "Subir plantilla",
+    "template_desc": "Descripción de la plantilla",
+    "templates_desc": "Administra tus plantillas de currículum",
+    "template_name": "Nombre de la plantilla",
+    "template_saved": "Plantilla guardada",
+    "set_default": "Establecer como predeterminada",
+    "builtin_badge": "Integrada",
+    "custom_badge": "Personalizada",
+    "templates_title": "Plantillas"
   },
-
   "builder": {
     "title": "Constructor de Currículum",
     "desc": "Arrastra y suelta entradas del KB para crear un currículum personalizado.",
@@ -630,7 +624,6 @@
     "generating": "Generando vista previa PDF...",
     "preview_error": "Falló la generación de vista previa"
   },
-
   "ats": {
     "title": "Puntuación de Compatibilidad ATS",
     "score_label": "Puntuación ATS",
