@@ -22,8 +22,9 @@ login_bp = Blueprint("login", __name__)
 
 
 def _find_system_chrome() -> str | None:
-    """Find system-installed Chrome/Chromium for faster browser sessions."""
+    """Find system-installed Chrome/Chromium."""
     import platform
+
     candidates = []
     if platform.system() == "Windows":
         for base in [
@@ -31,15 +32,44 @@ def _find_system_chrome() -> str | None:
             os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"),
             os.path.expandvars(r"%LOCALAPPDATA%"),
         ]:
-            candidates.append(os.path.join(base, "Google", "Chrome", "Application", "chrome.exe"))
+            candidates.append(
+                os.path.join(base, "Google", "Chrome", "Application", "chrome.exe")
+            )
     elif platform.system() == "Darwin":
-        candidates.append("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
+        candidates.append(
+            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        )
     else:
-        candidates.extend(["/usr/bin/google-chrome", "/usr/bin/chromium-browser", "/usr/bin/chromium"])
+        candidates.extend([
+            "/usr/bin/google-chrome",
+            "/usr/bin/chromium-browser",
+            "/usr/bin/chromium",
+        ])
 
-    for path in candidates:
-        if os.path.isfile(path):
-            return path
+    for candidate in candidates:
+        if os.path.isfile(candidate):
+            return candidate
+
+    return None
+
+
+def _find_chrome_executable() -> str | None:
+    """Resolve Chrome, falling back to Playwright's bundled Chromium."""
+    system_chrome = _find_system_chrome()
+    if system_chrome:
+        return system_chrome
+
+    try:
+        from playwright.sync_api import sync_playwright
+
+        with sync_playwright() as playwright:
+            executable = playwright.chromium.executable_path
+
+        if executable and os.path.isfile(executable):
+            return executable
+    except Exception as e:
+        logger.debug("Could not resolve Playwright Chromium: %s", e)
+
     return None
 
 
@@ -60,7 +90,7 @@ def login_open():
     if not any(host == d or host.endswith("." + d) for d in allowed_domains):
         return jsonify({"error": t("errors.unsupported_login_url")}), 400
 
-    chrome_path = _find_system_chrome()
+    chrome_path = _find_chrome_executable()
     if not chrome_path:
         return jsonify({
             "error": t("errors.chrome_not_found"),

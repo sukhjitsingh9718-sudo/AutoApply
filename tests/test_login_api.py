@@ -77,7 +77,7 @@ class TestLoginOpen:
         assert rv.status_code == 400
         assert "Only LinkedIn and Indeed" in rv.get_json()["error"]
 
-    @patch("routes.login._find_system_chrome", return_value=None)
+    @patch("routes.login._find_chrome_executable", return_value=None)
     def test_no_chrome_returns_500(self, _mock, app_client):
         client, _ = app_client
         rv = client.post(
