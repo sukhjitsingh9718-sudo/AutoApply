@@ -50,11 +50,7 @@ class AshbyApplier(BaseApplier):
         self._fill_form_fields(profile)
 
         if resume_pdf_path:
-            self._safe_upload(resume_pdf_path, [
-                'input[type="file"][name*="resume"]',
-                'input[type="file"][accept*="pdf"]',
-                'input[type="file"]',
-            ])
+            self._upload_resume(resume_pdf_path)
 
         self._fill_cover_letter(cover_letter_text)
         self._answer_custom_questions(profile)
@@ -137,6 +133,17 @@ class AshbyApplier(BaseApplier):
             'input[name*="location"], input[name*="Location"], '
             'input[placeholder*="location"]',
             profile.location,
+        )
+
+    def _upload_resume(self, resume_pdf_path) -> bool:
+        """Upload a resume using Ashby-compatible file input selectors."""
+        return self._safe_upload(
+            resume_pdf_path,
+            [
+                'input[type="file"][name*="resume"]',
+                'input[type="file"][accept*="pdf"]',
+                'input[type="file"]',
+            ],
         )
 
     def _fill_cover_letter(self, text: str) -> None:

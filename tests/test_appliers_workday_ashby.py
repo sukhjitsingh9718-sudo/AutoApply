@@ -707,7 +707,8 @@ class TestWorkdayCoverageGaps:
         page.query_selector.side_effect = qs
         applier = WorkdayApplier(page)
         applier._fill_my_experience(_make_profile(), Path("/tmp/resume.pdf"))
-        file_input.set_input_files.assert_called_once()
+        assert file_input.set_input_files.call_count == 3
+        file_input.set_input_files.assert_any_call("/tmp/resume.pdf")
 
     @patch("bot.apply.base.time.sleep")
     def test_screening_questions_label_text_exception(self, _sleep):
