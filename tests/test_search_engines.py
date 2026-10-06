@@ -10,7 +10,7 @@ Requirement traceability:
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 from bot.apply.indeed import IndeedApplier
 from bot.apply.linkedin import LinkedInApplier
@@ -93,12 +93,36 @@ class TestLinkedInSearcher:
         results = list(searcher.search(_make_criteria(), page=page))
         assert results == []
 
+    def test_delayed_authwall_redirect_yields_nothing(self):
+        page = _make_page()
+
+        # Simulate LinkedIn landing on authwall after initial navigation.
+        type(page).url = PropertyMock(
+            return_value=(
+                "https://www.linkedin.com/authwall"
+                "?sessionRedirect=https%3A%2F%2Fwww.linkedin.com%2Fjobs"
+            )
+        )
+
+        searcher = LinkedInSearcher()
+        results = list(
+            searcher.search(
+                _make_criteria(),
+                page=page,
+            )
+        )
+
+        assert results == []
+        page.query_selector_all.assert_not_called()
+
     @patch("bot.search.linkedin.time.sleep")
     def test_no_job_cards_yields_nothing(self, _sleep):
         page = _make_page()
         page.query_selector_all.return_value = []
+
         searcher = LinkedInSearcher()
         results = list(searcher.search(_make_criteria(), page=page))
+
         assert results == []
 
     @patch("bot.search.linkedin.time.sleep")

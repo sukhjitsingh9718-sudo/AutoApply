@@ -10,6 +10,8 @@ import time
 from typing import TYPE_CHECKING, Iterator
 from urllib.parse import quote_plus
 
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+
 from bot.search.base import BaseSearcher, RawJob
 
 if TYPE_CHECKING:
@@ -69,10 +71,36 @@ class LinkedInSearcher(BaseSearcher):
 
         logger.info("LinkedIn: searching '%s' in '%s'", title, location)
         page.goto(url, wait_until="domcontentloaded", timeout=30000)
-        time.sleep(2)  # Wait for dynamic content
 
-        # Check if logged in
-        if "login" in page.url or "authwall" in page.url:
+        # LinkedIn may redirect to login/authwall asynchronously after the
+        # initial DOMContentLoaded event. Wait for either authentication
+        # redirect or usable search-result markup. This check is intentionally
+        # non-destructive: it does not consume job-card query results.
+        try:
+            page.wait_for_function(
+                """() => {
+                    const url = window.location.href.toLowerCase();
+                    if (url.includes("login") || url.includes("authwall")) {
+                        return true;
+                    }
+
+                    return Boolean(
+                        document.querySelector(
+                            ".jobs-search-results__list-item, "
+                            + ".job-card-container, "
+                            + "[data-occludable-job-id]"
+                        )
+                    );
+                }""",
+                timeout=10000,
+            )
+        except PlaywrightTimeoutError:
+            # A timeout simply means neither condition became ready.
+            # The normal no-results handling below will deal with that case.
+            pass
+
+        final_url = page.url.lower()
+        if "login" in final_url or "authwall" in final_url:
             logger.warning(
                 "LinkedIn requires login. Please log in via the browser "
                 "and restart the bot."
