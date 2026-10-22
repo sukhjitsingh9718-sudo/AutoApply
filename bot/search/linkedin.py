@@ -48,9 +48,14 @@ class LinkedInSearcher(BaseSearcher):
                     return
 
                 try:
-                    yield from self._search_page(
+                    for raw_job in self._search_page(
                         page, title, location, criteria, max_results - found
-                    )
+                    ):
+                        found += 1
+                        yield raw_job
+
+                        if found >= max_results:
+                            return
                 except Exception as e:
                     logger.error(
                         "LinkedIn search failed for '%s' in '%s': %s",
@@ -60,57 +65,80 @@ class LinkedInSearcher(BaseSearcher):
     def _search_page(
         self, page, title: str, location: str, criteria, remaining: int
     ) -> Iterator[RawJob]:
-        """Search a single title+location combination."""
-        url = (
+        """Search a single title+location combination across LinkedIn result pages."""
+        base_url = (
             f"{LINKEDIN_SEARCH_URL}"
             f"?keywords={quote_plus(title)}"
             f"&location={quote_plus(location)}"
         )
         if criteria.remote_only:
-            url += "&f_WT=2"  # LinkedIn remote filter
+            base_url += "&f_WT=2"
 
         logger.info("LinkedIn: searching '%s' in '%s'", title, location)
-        page.goto(url, wait_until="domcontentloaded", timeout=30000)
-
-        # LinkedIn may redirect to login/authwall asynchronously after the
-        # initial DOMContentLoaded event. Wait for either authentication
-        # redirect or usable search-result markup. This check is intentionally
-        # non-destructive: it does not consume job-card query results.
-        try:
-            page.wait_for_function(
-                """() => {
-                    const url = window.location.href.toLowerCase();
-                    if (url.includes("login") || url.includes("authwall")) {
-                        return true;
-                    }
-
-                    return Boolean(
-                        document.querySelector(
-                            ".jobs-search-results__list-item, "
-                            + ".job-card-container, "
-                            + "[data-occludable-job-id]"
-                        )
-                    );
-                }""",
-                timeout=10000,
-            )
-        except PlaywrightTimeoutError:
-            # A timeout simply means neither condition became ready.
-            # The normal no-results handling below will deal with that case.
-            pass
-
-        final_url = page.url.lower()
-        if "login" in final_url or "authwall" in final_url:
-            logger.warning(
-                "LinkedIn requires login. Please log in via the browser "
-                "and restart the bot."
-            )
-            return
 
         found = 0
         page_num = 0
+        seen_job_ids: set[str] = set()
 
+        # LinkedIn job search pages conventionally advance in batches of 25.
+        # Use the URL offset instead of depending on the pagination button being
+        # present in the currently rendered/virtualized DOM.
         while found < remaining:
+            offset = page_num * 25
+            url = f"{base_url}&start={offset}"
+
+            logger.info(
+                "LinkedIn: loading results page %d (offset=%d)",
+                page_num + 1,
+                offset,
+            )
+
+            page.goto(url, wait_until="domcontentloaded", timeout=30000)
+
+            try:
+                page.wait_for_function(
+                    """() => {
+                        const url = window.location.href.toLowerCase();
+                        if (url.includes("login") || url.includes("authwall")) {
+                            return true;
+                        }
+
+                        return Boolean(
+                            document.querySelector(
+                                ".jobs-search-results__list-item, "
+                                + ".job-card-container, "
+                                + "[data-occludable-job-id]"
+                            )
+                        );
+                    }""",
+                    timeout=10000,
+                )
+            except PlaywrightTimeoutError:
+                pass
+
+            final_url = page.url.lower()
+            if "login" in final_url or "authwall" in final_url:
+                logger.warning(
+                    "LinkedIn requires login. Please log in via the browser "
+                    "and restart the bot."
+                )
+                return
+
+            # Give LinkedIn's virtualized result list a chance to populate.
+            for _ in range(6):
+                page.evaluate(
+                    """() => {
+                        const el =
+                            document.querySelector('.jobs-search-results-list') ||
+                            document.querySelector('.scaffold-layout__list') ||
+                            document.scrollingElement;
+                        if (el) {
+                            el.scrollTop = el.scrollHeight;
+                        }
+                    }"""
+                )
+                time.sleep(0.5)
+
             job_cards = page.query_selector_all(
                 ".jobs-search-results__list-item, "
                 ".job-card-container, "
@@ -118,8 +146,13 @@ class LinkedInSearcher(BaseSearcher):
             )
 
             if not job_cards:
-                logger.info("LinkedIn: no job cards found on page %d", page_num)
+                logger.info(
+                    "LinkedIn: no job cards found on results page %d",
+                    page_num + 1,
+                )
                 break
+
+            new_jobs_on_page = 0
 
             for card in job_cards:
                 if found >= remaining:
@@ -127,23 +160,42 @@ class LinkedInSearcher(BaseSearcher):
 
                 try:
                     raw_job = self._extract_job(page, card)
-                    if raw_job:
-                        found += 1
-                        yield raw_job
-                except Exception as e:
-                    logger.debug("LinkedIn: failed to extract job card: %s", e)
+                    if not raw_job:
+                        continue
 
-            # Try next page
-            page_num += 1
-            next_btn = page.query_selector(
-                "button[aria-label='Next'], "
-                ".artdeco-pagination__button--next"
+                    if raw_job.external_id in seen_job_ids:
+                        continue
+
+                    seen_job_ids.add(raw_job.external_id)
+                    found += 1
+                    new_jobs_on_page += 1
+                    yield raw_job
+
+                except Exception as e:
+                    logger.debug(
+                        "LinkedIn: failed to extract job card: %s",
+                        e,
+                    )
+
+            logger.info(
+                "LinkedIn: page %d yielded %d new jobs (%d total)",
+                page_num + 1,
+                new_jobs_on_page,
+                found,
             )
-            if not next_btn or not next_btn.is_enabled():
+
+            # If LinkedIn returned a page but none of its jobs were new,
+            # continuing offsets would normally just repeat the same results.
+            if new_jobs_on_page == 0:
                 break
 
-            next_btn.click()
-            time.sleep(2)
+            page_num += 1
+
+            # Safety bound: enough pages to satisfy the normal 100-result cap
+            # without risking an endless loop if LinkedIn ignores `start`.
+            if page_num >= 10:
+                logger.info("LinkedIn: pagination safety limit reached")
+                break
 
     def _extract_job(self, page, card) -> RawJob | None:
         """Extract job details from a LinkedIn job card."""

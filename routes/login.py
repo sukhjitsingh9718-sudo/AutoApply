@@ -142,8 +142,13 @@ def login_close():
 
     try:
         proc.terminate()
+        try:
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=5)
     except Exception as e:
-        logger.debug("Failed to terminate login browser: %s", e)
+        logger.debug("Failed to terminate login browser cleanly: %s", e)
     return jsonify({"status": "closed"})
 
 

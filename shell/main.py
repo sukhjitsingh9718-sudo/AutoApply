@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Health-check constants
 _HEALTH_POLL_INTERVAL = 0.5  # seconds between polls
-_HEALTH_TIMEOUT = 30  # seconds before giving up
+_HEALTH_TIMEOUT = 120  # allow slow first startup on Windows
 
 # Inline HTML shown while Flask is starting
 _LOADING_HTML = """\

@@ -175,6 +175,7 @@ class TestGetStatusDict:
         "start_time",
         "uptime_seconds",
         "awaiting_review",
+        "review_context",
         "awaiting_login",
         "login_context",
     }
@@ -250,6 +251,24 @@ class TestReviewGate:
         """FR-053: begin_review() sets awaiting_review to True."""
         state.begin_review()
         assert state.awaiting_review is True
+
+    def test_review_context_lifecycle(self, state: BotState) -> None:
+        """Pending review context is exposed and cleared after decision."""
+        context = {
+            "job_title": "Software Engineer",
+            "company": "Example",
+            "platform": "linkedin",
+            "match_score": 80,
+            "cover_letter": "",
+            "apply_url": "https://example.com/job",
+        }
+        state.begin_review(context)
+        assert state.review_context == context
+        assert state.get_status_dict()["review_context"] == context
+
+        state.set_review_decision("approve")
+        assert state.review_context is None
+        assert state.get_status_dict()["review_context"] is None
 
     def test_set_review_decision_clears_awaiting(self, state: BotState) -> None:
         """FR-053: set_review_decision() clears awaiting_review."""

@@ -166,18 +166,26 @@ def run_bot(
 
                         # Review gate — pause for user approval in review/watch modes
                         if config.bot.apply_mode in ("review", "watch"):
+                            review_context = {
+                                "job_title": raw_job.title,
+                                "company": raw_job.company,
+                                "platform": raw_job.platform,
+                                "match_score": scored.score,
+                                "cover_letter": cover_letter_text,
+                                "apply_url": raw_job.apply_url,
+                            }
+
+                            # Store context before emitting so reconnecting clients
+                            # can recover the pending review from bot_status.
+                            state.begin_review(review_context)
+
                             emit(
                                 "REVIEW",
-                                job_title=raw_job.title,
-                                company=raw_job.company,
-                                platform=raw_job.platform,
-                                match_score=scored.score,
-                                cover_letter=cover_letter_text,
-                                apply_url=raw_job.apply_url,
+                                **review_context,
                                 message=f"Review: {raw_job.title} at {raw_job.company} (score {scored.score})",
                             )
 
-                            decision, edited_cl = _wait_for_review(state)
+                            decision, edited_cl = state.wait_for_review()
                             if decision == "stop":
                                 state.stop()
                                 break
@@ -380,6 +388,29 @@ def _generate_docs(scored: ScoredJob, config, profile_dir: Path, db=None):
     version_meta = None
 
     skip_cover_letter = not config.bot.cover_letter_enabled
+
+    # --- No-AI mode: use configured static resume immediately ---
+    if not config.llm.provider or not config.llm.api_key:
+        if config.profile.fallback_resume_path:
+            fallback = Path(config.profile.fallback_resume_path)
+            if fallback.exists():
+                logger.info(
+                    "AI provider unavailable; using static fallback resume: %s",
+                    fallback,
+                )
+                return fallback, None, "", {
+                    "resume_md_path": "",
+                    "resume_pdf_path": str(fallback),
+                    "llm_provider": None,
+                    "llm_model": None,
+                    "reuse_source": "static_fallback",
+                    "source_entry_ids": [],
+                }
+
+        logger.warning(
+            "AI provider unavailable and no valid fallback resume is configured"
+        )
+        return None, None, "", None
 
     # --- Phase 1: Try KB assembly (LLM-powered with strict KB data) ---
     kb_result = _try_kb_assembly(scored, config, profile_dir)

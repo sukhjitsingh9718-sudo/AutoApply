@@ -24,6 +24,7 @@ class BotState:
         self._review_decision: str | None = None  # "approve" | "skip" | "edit"
         self._review_edits: str | None = None  # edited cover letter text
         self._awaiting_review: bool = False
+        self._review_context: dict | None = None
 
         # Login gate — bot blocks here until user logs in manually (FR-089)
         self._login_event = threading.Event()
@@ -67,6 +68,11 @@ class BotState:
             return self._awaiting_review
 
     @property
+    def review_context(self) -> dict | None:
+        with self._lock:
+            return dict(self._review_context) if self._review_context else None
+
+    @property
     def awaiting_login(self) -> bool:
         with self._lock:
             return self._awaiting_login
@@ -91,6 +97,8 @@ class BotState:
             self._status = "stopped"
             self._stop_flag = True
             self._start_time = None
+            self._awaiting_review = False
+            self._review_context = None
             # Unblock gates so bot thread can exit
             self._review_event.set()
             self._login_event.set()
@@ -117,13 +125,14 @@ class BotState:
             self._applied_today = 0
             self._errors_today = 0
 
-    def begin_review(self) -> None:
+    def begin_review(self, context: dict | None = None) -> None:
         """Signal that the bot is waiting for a user review decision."""
         with self._lock:
             self._review_event.clear()
             self._review_decision = None
             self._review_edits = None
             self._awaiting_review = True
+            self._review_context = dict(context) if context else None
 
     def set_review_decision(self, decision: str, edits: str | None = None) -> None:
         """Set the user's review decision and unblock the bot thread.
@@ -136,6 +145,7 @@ class BotState:
             self._review_decision = decision
             self._review_edits = edits
             self._awaiting_review = False
+            self._review_context = None
             self._review_event.set()
 
     def wait_for_review(self) -> tuple[str, str | None]:
@@ -206,6 +216,9 @@ class BotState:
                 "start_time": self._start_time.isoformat() if self._start_time else None,
                 "uptime_seconds": uptime_seconds,
                 "awaiting_review": self._awaiting_review,
+                "review_context": (
+                    dict(self._review_context) if self._review_context else None
+                ),
                 "awaiting_login": self._awaiting_login,
                 "login_context": self._login_context,
             }

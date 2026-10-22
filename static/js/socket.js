@@ -33,8 +33,10 @@ function handleBotStatus(data) {
     const banner = document.getElementById('ai-warning-banner');
     if (banner) banner.classList.toggle('hidden', state.aiAvailable);
   }
-  // Hide review card if bot is no longer awaiting review
-  if (data.awaiting_review === false) {
+  // Recover a pending review after page reload / socket reconnect.
+  if (data.awaiting_review === true && data.review_context) {
+    showReviewCard(data.review_context);
+  } else if (data.awaiting_review === false) {
     hideReviewCard();
   }
   // Show/hide login gate modal (FR-089)
